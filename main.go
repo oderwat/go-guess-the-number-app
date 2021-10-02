@@ -14,14 +14,15 @@ import (
 type mainPage struct {
 	app.Compo
 
-	url *url.URL
+	updateAvailable bool
+	url             *url.URL
 }
 
 type guessTheNumber struct {
 	app.Compo
 
 	myNumber int
-	message  string
+	message  string // why does this not work anymore when this is "Message" instead?
 	guess    string
 }
 
@@ -33,13 +34,33 @@ func (p *mainPage) OnNav(ctx app.Context) {
 }
 
 func (c *mainPage) Render() app.UI {
-	return app.Body().Body(&guessTheNumber{})
+	return app.Main().Body(&guessTheNumber{},
+		app.Hr(),
+		app.If(c.updateAvailable,
+			app.Button().
+				Text("Update!").
+				OnClick(c.onUpdateClick),
+		))
+}
+
+func (a *mainPage) onUpdateClick(ctx app.Context, e app.Event) {
+	// Reloads the page to display the modifications.
+	ctx.Reload()
+}
+
+// OnAppUpdate satisfies the app.AppUpdater interface. It is called when the app
+// is updated in background.
+func (a *mainPage) OnAppUpdate(ctx app.Context) {
+	a.updateAvailable = ctx.AppUpdateAvailable() // Reports that an app update is available.
 }
 
 func (g *guessTheNumber) OnMount(ctx app.Context) {
 	g.myNumber = rand.Intn(100) + 1
 	g.message = "I think of a number between 1 and 100!"
 	g.guess = ""
+
+	el := app.Window().GetElementByID("guess")
+	el.Call("focus")
 }
 
 func (g *guessTheNumber) onEnter(call func(ctx app.Context, e app.Event)) app.EventHandler {
@@ -75,10 +96,11 @@ func (g *guessTheNumber) Render() app.UI {
 		app.P().Body(
 			app.P().Body(app.Text(g.message)),
 			app.Input().
+				ID("guess").
 				Type("text").
 				Value(g.guess).
 				Placeholder("Your guess (1-100)?").
-				AutoFocus(true).
+				//AutoFocus(true). // does not work anyway
 				OnKeyup(g.onEnter(g.guessEvent)),
 		),
 	)
