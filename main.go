@@ -24,6 +24,7 @@ type guessTheNumber struct {
 	myNumber int
 	message  string // why does this not work anymore when this is "Message" instead?
 	guess    string
+	guesses  []string
 }
 
 var _ app.Mounter = (*guessTheNumber)(nil) // Verify the implementation
@@ -34,13 +35,18 @@ func (p *mainPage) OnNav(ctx app.Context) {
 }
 
 func (c *mainPage) Render() app.UI {
-	return app.Main().Body(&guessTheNumber{},
-		app.Hr(),
+	count := 1 // try 1000 if you like
+	body := make([]app.UI, 0, count+5)
+	body = append(body,
 		app.If(c.updateAvailable,
 			app.Button().
 				Text("Update!").
 				OnClick(c.onUpdateClick),
-		))
+			app.Hr()))
+	for i := 0; i < count; i++ {
+		body = append(body, &guessTheNumber{})
+	}
+	return app.Main().Body(append(body, app.Hr(), app.Text("Ends here!"))...)
 }
 
 func (a *mainPage) onUpdateClick(ctx app.Context, e app.Event) {
@@ -74,7 +80,9 @@ func (g *guessTheNumber) onEnter(call func(ctx app.Context, e app.Event)) app.Ev
 }
 
 func (g *guessTheNumber) guessEvent(ctx app.Context, e app.Event) {
-	v, err := strconv.Atoi(ctx.JSSrc().Get("value").String())
+	guess := ctx.JSSrc().Get("value").String()
+	g.guesses = append(g.guesses, guess)
+	v, err := strconv.Atoi(guess)
 	if err != nil {
 		v = 0
 	}
@@ -102,6 +110,9 @@ func (g *guessTheNumber) Render() app.UI {
 				Placeholder("Your guess (1-100)?").
 				//AutoFocus(true). // does not work anyway
 				OnKeyup(g.onEnter(g.guessEvent)),
+			app.Ul().Body(app.Range(g.guesses).Slice(func(i int) app.UI {
+				return app.Li().Text(g.guesses[i])
+			})),
 		),
 	)
 }
