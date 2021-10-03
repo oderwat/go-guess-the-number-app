@@ -13,7 +13,7 @@ import (
 
 type mainPage struct {
 	app.Compo
-
+	autoUpdate      bool
 	updateAvailable bool
 	url             *url.URL
 }
@@ -61,8 +61,13 @@ func (a *mainPage) OnAppUpdate(ctx app.Context) {
 }
 
 func (g *guessTheNumber) OnMount(ctx app.Context) {
+	g.gameInit()
+}
+
+func (g *guessTheNumber) gameInit() {
 	g.myNumber = rand.Intn(100) + 1
 	g.message = "I think of a number between 1 and 100!"
+	g.guesses = g.guesses[:0] // keep memory
 	g.guess = ""
 
 	el := app.Window().GetElementByID("guess")
@@ -71,7 +76,7 @@ func (g *guessTheNumber) OnMount(ctx app.Context) {
 
 func (g *guessTheNumber) onEnter(call func(ctx app.Context, e app.Event)) app.EventHandler {
 	return func(ctx app.Context, e app.Event) {
-		app.Logf("KeyboardEvent: %v", e.Value.Get("code"))
+		//app.Logf("KeyboardEvent: %v", e.Value.Get("code"))
 		if e.Value.Get("code").String() != "Enter" {
 			return
 		}
@@ -81,17 +86,24 @@ func (g *guessTheNumber) onEnter(call func(ctx app.Context, e app.Event)) app.Ev
 
 func (g *guessTheNumber) guessEvent(ctx app.Context, e app.Event) {
 	guess := ctx.JSSrc().Get("value").String()
-	g.guesses = append(g.guesses, guess)
+	if guess == "Restart!" {
+		g.gameInit()
+		return
+	}
 	v, err := strconv.Atoi(guess)
 	if err != nil {
 		v = 0
 	}
 	if v < g.myNumber {
 		g.message = "Your number is smaller!"
+		g.guesses = append(g.guesses, guess+" was smaller")
 	} else if v > g.myNumber {
 		g.message = "Your number is bigger!"
+		g.guesses = append(g.guesses, guess+" was bigger")
 	} else {
+		g.guesses = append(g.guesses, guess+" is correct!")
 		g.message = "Congratulations! You found my number!"
+		g.guess = "Restart!"
 	}
 	ctx.JSSrc().Call("select")
 }
@@ -122,7 +134,6 @@ func main() {
 
 	// Components routing:
 	app.Route("/", &mainPage{})
-	//app.Route("/hello", &hello{})
 
 	app.RunWhenOnBrowser()
 
