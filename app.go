@@ -3,7 +3,7 @@ package main
 import (
 	"net/url"
 
-	"github.com/maxence-charriere/go-app/v9/pkg/app"
+	"github.com/maxence-charriere/go-app/v10/pkg/app"
 )
 
 type appPage struct {
@@ -17,13 +17,14 @@ var _ app.Mounter = (*guessTheNumber)(nil) // Verify the implementation
 var _ app.Navigator = (*appPage)(nil)      // Verify the implementation
 
 func (a *appPage) OnNav(ctx app.Context) {
+	if app.IsServer {
+		return
+	}
 	a.url = ctx.Page().URL()
-	//app.Logf(p.url.Fragment)
+	app.Logf(a.url.String())
 	if a.url.Fragment == "autoupdate" {
-		app.Logf("auto update enabled")
 		a.autoUpdate = true
 	} else {
-		app.Logf("auto update disabled")
 		a.autoUpdate = false
 	}
 }
@@ -33,10 +34,12 @@ func (a *appPage) Render() app.UI {
 	body := make([]app.UI, 0, count+5)
 	body = append(body,
 		app.If(a.updateAvailable,
-			app.Button().
-				Text("Update!").
-				OnClick(a.onUpdateClick),
-			app.Hr()))
+			func() app.UI {
+				return app.Button().
+					Text("Update!").
+					OnClick(a.onUpdateClick)
+			}),
+		app.Hr())
 	for i := 0; i < count; i++ {
 		body = append(body, &guessTheNumber{})
 	}

@@ -4,7 +4,7 @@ import (
 	"math/rand"
 	"strconv"
 
-	"github.com/maxence-charriere/go-app/v9/pkg/app"
+	"github.com/maxence-charriere/go-app/v10/pkg/app"
 )
 
 type guessTheNumber struct {
@@ -77,7 +77,7 @@ func (g *guessTheNumber) Render() app.UI {
 				Value(g.guess).
 				Placeholder("Your guess (1-100)?").
 				//AutoFocus(true). // does not work anyway
-				OnKeyup(g.onEnter(g.guessEvent)),
+				OnKeyUp(g.onEnter(g.guessEvent)),
 			app.Ul().Body(app.Range(g.guesses).Slice(func(i int) app.UI {
 				return app.Li().Text(g.guesses[i])
 			})),
