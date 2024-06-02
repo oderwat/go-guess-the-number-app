@@ -17,6 +17,10 @@ func main() {
 
 	app.RunWhenOnBrowser()
 
+	if !app.IsServer {
+		return // let go dead code elimination optimize the frontend code (saves 11 mb in app.wasm)
+	}
+
 	// HTTP routing:
 	http.Handle("/", &app.Handler{
 		Name:        "Guess the Number",
